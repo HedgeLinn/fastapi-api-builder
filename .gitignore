@@ -1,0 +1,7 @@
+# 运行时产物：按服务生成，不进版本库（template 里的示例配置才是要保留的）
+data/*
+!data/.gitkeep
+
+# Python
+__pycache__/
+*.pyc

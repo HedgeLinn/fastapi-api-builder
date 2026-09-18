@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>挑一个界面方向</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#eef1f5;color:#1f2933;
+       font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+  .p{max-width:1520px;margin:0 auto;padding:32px 24px 70px}
+  h1{font-size:22px;margin:0 0 6px}
+  .lede{color:#78838f;font-size:14px;margin:0 0 26px;max-width:90ch}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:1180px){.grid{grid-template-columns:1fr}}
+  .slot{background:#fff;border:1px solid #dfe4ea;border-radius:12px;overflow:hidden}
+  .head{padding:14px 18px;border-bottom:1px solid #eef1f4}
+  .head b{font-size:15px}
+  .head p{margin:4px 0 0;color:#78838f;font-size:12.5px}
+  .head .open{float:right;font-size:12.5px;color:#2f6fed;text-decoration:none}
+  .frame{height:660px;background:#fff}
+  .frame iframe{width:100%;height:100%;border:0;display:block}
+  .note{margin-top:22px;padding:12px 16px;background:#fff8e6;border:1px solid #f0d9a8;
+        border-radius:9px;color:#8a5a00;font-size:13px}
+</style>
+</head>
+<body>
+<div class="p">
+  <h1>同一个服务，四个界面方向</h1>
+  <p class="lede">四个都是活的，连的是你正在跑的服务（真实数据：示例市、示例市两个任务）。
+    内容一样，差的是<b>布局、视觉、引导方式</b>。挑一个，或者告诉我"要 A 的布局配 C 的配色"这种混搭。</p>
+
+  <div class="grid">
+
+    <div class="slot">
+      <div class="head"><a class="open" href="/v/a" target="_blank">单独打开 ↗</a>
+        <b>A · 聚焦单栏</b>
+        <p>进来就是一件事：填目录 → 点开始 → 看结果。历史收在底部。
+          极简留白、大字号、无边框卡片。<b>最不像后台管理系统</b></p></div>
+      <div class="frame"><iframe src="/v/a"></iframe></div>
+    </div>
+
+    <div class="slot">
+      <div class="head"><a class="open" href="/v/b" target="_blank">单独打开 ↗</a>
+        <b>B · 后台双栏</b>
+        <p>左边一列是任务历史（常驻），右边是工作区。满屏宽，信息密度高。
+          企业后台观感，适合<b>一次管好几个任务</b></p></div>
+      <div class="frame"><iframe src="/v/b"></iframe></div>
+    </div>
+
+    <div class="slot">
+      <div class="head"><a class="open" href="/v/c" target="_blank">单独打开 ↗</a>
+        <b>C · 门户宽版</b>
+        <p>你现在这张页面的加宽优化版：结构、配色照旧，把间距、字号、输入框都放大，
+          首屏加引导。<b>改动最小、最容易接受</b></p></div>
+      <div class="frame"><iframe src="/v/c"></iframe></div>
+    </div>
+
+    <div class="slot">
+      <div class="head"><a class="open" href="/v/d" target="_blank">单独打开 ↗</a>
+        <b>D · 向导分步</b>
+        <p>四步走：选数据 → 确认 → 分析中 → 取结果。一次只给一步，大按钮大字号。
+          <b>给完全不懂的人用</b>，代价是老手嫌慢</p></div>
+      <div class="frame"><iframe src="/v/d"></iframe></div>
+    </div>
+
+  </div>
+
+  <div class="note"><b>提醒</b>：四个页面每 5 秒都会去刷新任务列表，是真实请求。
+    我只做了读操作——没有提交任何新任务（提交会真的触发示例分析脚本）。</div>
+</div>
+</body>
+</html>

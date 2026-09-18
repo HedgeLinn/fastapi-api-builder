@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<!--
+  ============================================================================
+  界面模板 · 向导分步（一次只给一步）
+  ============================================================================
+  适合：终端用户「就想跑一次」——偶尔用、不熟悉、不能出错。
+        一步一屏、大按钮、每步都有明确的下一步，容错性最好。
+  不适合：老手批量操作（会觉得慢、点得多）→ 用 console-workspace.html
+
+  换服务时只改下面 <script> 顶部的 CONF 块，布局代码一个字不用动。
+
+  ⚠️ 下面 CONF 里那份默认值**是一份示例配置**（字段名如 current_item / ok_count
+     都是它的，不是模板要求的）。它是**能跑的举例**，不是标准 ——
+     照抄前先看你自己的后端返回什么，别为了迁就模板去改后端。
+  ============================================================================
+-->
+<style>
+  *{box-sizing:border-box}
+  :root{
+    --bg:#f7f9fc; --card:#fff; --ink:#1a2430; --muted:#77828f; --line:#e6eaf0;
+    --accent:#2f6fed; --accent-soft:#eef4ff; --ok:#12a06a; --oksoft:#e9f8f1;
+    --err:#cf4438; --errsoft:#fdeeed; --warn:#b3730a; --warnsoft:#fff6e6;
+  }
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:17px/1.7 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:56px 24px 100px}
+
+  .steps{display:flex;align-items:center;margin-bottom:36px;padding:0 4px}
+  .st{display:flex;align-items:center;gap:9px;color:#aab2bd;font-size:14px;
+    font-weight:500;white-space:nowrap}
+  .st .n{width:28px;height:28px;border-radius:50%;border:2px solid #d9dfe7;
+    display:flex;align-items:center;justify-content:center;font-size:13.5px;
+    font-weight:700;flex:0 0 auto;background:#fff}
+  .st.on{color:var(--accent)}
+  .st.on .n{background:var(--accent);border-color:var(--accent);color:#fff}
+  .st.ok{color:var(--ok)}
+  .st.ok .n{background:var(--ok);border-color:var(--ok);color:#fff}
+  .ln{flex:1;height:2px;background:#e3e8ee;margin:0 12px;border-radius:2px}
+  .ln.on{background:var(--ok)}
+
+  .card{background:var(--card);border-radius:18px;padding:40px 44px;
+    box-shadow:0 1px 3px rgba(16,24,40,.05), 0 12px 32px -18px rgba(16,24,40,.14)}
+  h1{font-size:25px;font-weight:650;letter-spacing:-.018em;margin:0 0 10px}
+  .sub{color:var(--muted);font-size:15.5px;margin:0 0 30px;max-width:52ch}
+  label{display:block;font-size:15px;font-weight:600;margin:0 0 12px;color:#39434f}
+  .inp{width:100%;padding:17px 19px;border:2px solid var(--line);border-radius:13px;
+    font:inherit;font-size:16px;background:#fbfcfe}
+  .inp:focus{outline:0;border-color:var(--accent);background:#fff}
+  .btn{width:100%;padding:18px;border:0;border-radius:13px;background:var(--accent);
+    color:#fff;font:inherit;font-size:17px;font-weight:650;cursor:pointer;margin-top:26px}
+  .btn:hover{opacity:.93}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn.ghost{background:#fff;color:var(--ink);border:2px solid var(--line);font-weight:500;
+    margin-top:12px}
+  .note{margin-top:20px;padding:18px 20px;background:var(--accent-soft);border-radius:12px;
+    font-size:14.5px;line-height:1.8;color:#33445c}
+  .note b{color:var(--ink)}
+  .note code{font-family:ui-monospace,Consolas,monospace;background:#fff;padding:2px 7px;
+    border-radius:5px;font-size:13px;word-break:break-all}
+
+  .row{display:flex;gap:14px;margin-top:30px}
+  .row .btn{margin-top:0}
+  .sum{background:#f7f9fc;border-radius:12px;padding:20px 22px;font-size:15px;line-height:2}
+  .sum .k{color:var(--muted);display:inline-block;width:96px}
+  .sum code{font-family:ui-monospace,Consolas,monospace;font-size:14px;word-break:break-all}
+
+  .bar{height:12px;border-radius:99px;background:#eaedf2;overflow:hidden;margin:22px 0 14px}
+  .bar i{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,#6699f5,#2f6fed);transition:width .5s}
+  .now{font-size:16px;font-weight:600}
+  .cnt{display:flex;gap:30px;font-size:15px;color:var(--muted);margin-top:16px;flex-wrap:wrap}
+  .cnt b{color:var(--ink);font-size:19px;font-weight:650;margin-right:5px}
+  .log{margin-top:26px;background:#1c2430;border-radius:12px;padding:18px 20px;
+    font:13px/1.85 ui-monospace,Consolas,monospace;color:#c2cedb;
+    max-height:230px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+
+  .big{text-align:center;padding:14px 0 8px}
+  .big .ico{font-size:52px;line-height:1;color:var(--ok)}
+  .big h2{font-size:22px;font-weight:650;margin:18px 0 8px}
+  .big p{color:var(--muted);font-size:15.5px;margin:0}
+  .pathbox{margin-top:26px;background:var(--oksoft);border-radius:13px;padding:22px 24px;
+    text-align:left}
+  .pathbox .k{font-size:13.5px;color:#4e7a68;font-weight:600;margin-bottom:8px}
+  .pathbox code{font-family:ui-monospace,Consolas,monospace;font-size:14px;
+    color:#0e5c42;word-break:break-all;line-height:1.7}
+  .files{margin-top:16px;font-size:14.5px;color:var(--muted)}
+  .msg{margin-top:22px;border-radius:12px;padding:20px 22px;font-size:15px;line-height:1.75}
+  .msg.warn{background:var(--warnsoft);color:var(--warn)}
+  .msg.bad{background:var(--errsoft);color:var(--err)}
+  .msg.ok{background:var(--oksoft);color:#0b6b4a}
+
+  .recent{margin-top:34px;font-size:14.5px}
+  .recent summary{cursor:pointer;color:var(--muted);font-weight:500;list-style:none;
+    text-align:center}
+  .recent summary::-webkit-details-marker{display:none}
+  .item{display:flex;align-items:center;gap:12px;padding:14px 4px;
+    border-bottom:1px solid var(--line);cursor:pointer;font-size:14.5px}
+  .item:last-child{border-bottom:0}
+  .item:hover{background:#fafbfe}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .d-run{background:#2f6fed}.d-ok{background:#12a06a}.d-bad{background:#cf4438}
+  .d-wait{background:#c3cad3}.d-warn{background:#d9822b}
+  .item .p{margin-left:auto;color:var(--muted);font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="steps" id="steps">
+    <div class="st on" data-s="1"><span class="n">1</span><span class="lbl">—</span></div>
+    <div class="ln" data-l="1"></div>
+    <div class="st" data-s="2"><span class="n">2</span><span class="lbl">—</span></div>
+    <div class="ln" data-l="2"></div>
+    <div class="st" data-s="3"><span class="n">3</span><span class="lbl">—</span></div>
+    <div class="ln" data-l="3"></div>
+    <div class="st" data-s="4"><span class="n">4</span><span class="lbl">—</span></div>
+  </div>
+  <div class="card" id="card"></div>
+  <details class="recent">
+    <summary id="recentSummary">查看以前的记录</summary>
+    <div id="recent" style="margin-top:14px">
+      <div class="item" style="color:#77828f">加载中…</div>
+    </div>
+  </details>
+</div>
+
+<script>
+/* ============================================================================
+   ★ 配置区：换服务时只改这一块。
+   ============================================================================ */
+const CONF = {
+  title: '示例分析',
+  lede: '选一个数据目录，服务会处理里面的各个单元并生成结果。',
+  recentSummary: '查看以前的记录',
+
+  /* 四个步骤的名字 */
+  stepLabels: ['选数据', '确认', '处理中', '取结果'],
+
+  form: {
+    label: '要分析哪个数据目录？',
+    placeholder: '共享盘上的目录路径',
+    /* 这段会渲染在输入框下面，可以带 HTML */
+    howto: '<b>不知道填哪个？</b><br>' +
+           '· 只分析一个：填它自己的目录<br>' +
+           '· 一次分析多个：填它们<b>上一级</b>的目录，服务会逐个处理<br>' +
+           '两种情况服务都会自动识别，填错它会告诉你原因。',
+    prefill: m => (m.defaults && m.defaults.input_path) || '',
+    body: v => ({input_path: v})
+  },
+
+  /* 确认那一步显示的额外说明 */
+  confirmNote: '跑的时候可以关掉页面，服务在后台继续跑，跑完结果自动存到固定位置。',
+
+  /* 接口路径 */
+  api: {
+    meta:     '/api/meta',
+    create:   '/api/tasks',
+    list:     '/api/tasks',
+    task:     id => '/api/tasks/' + id,
+    log:      (id, n) => '/api/tasks/' + id + '/log?tail=' + n,
+    download: id => '/api/tasks/' + id + '/download'
+  },
+
+  /* 状态：[给人看的词, 色调]。色调只认 run/ok/warn/bad/wait */
+  states: {
+    queued:         ['排队中', 'wait'],
+    running:        ['处理中', 'run'],
+    done:           ['已完成', 'ok'],
+    partial_failed: ['部分完成', 'warn'],
+    failed:         ['没成功', 'bad'],
+    invalid:        ['没找到可处理的数据', 'bad'],
+    cancelled:      ['已停止', 'wait'],
+    interrupted:    ['被中断', 'bad']
+  },
+  terminal: ['done', 'partial_failed', 'failed', 'invalid', 'cancelled', 'interrupted'],
+
+  read: {
+    id:        t => t.id,
+    summary:   t => t.input_path,
+    outputDir: t => t.output_dir || '',
+    progress:  t => (t.state === 'invalid' ? 0 : Math.round(t.progress || 0)),
+    now:       t => t.state === 'queued' ? ''
+                     : (t.current_item
+                         ? '正在处理 ' + t.current_item +
+                           (t.total_count ? '（第 ' + (t.current_no||0) + ' 个，共 ' +
+                             t.total_count + ' 个）' : '')
+                         : ''),
+    counts:    t => [['已完成', t.ok_count], ['跳过', t.skipped_count], ['失败', t.fail_count]],
+    error:     t => t.error || '',
+    artifacts: t => (t.artifacts || []).map(a => ({
+                   label: a.label || '', path: a.rel_path || a.path || '', size: a.size
+                 }))
+  },
+
+  /* 各步的文案 */
+  text: {
+    step1Title: '开始一次任务',
+    step2Title: '确认一下',
+    step2Sub:   '确认后就会开始。过程中可以随时停止。',
+    step3Title: '正在处理…',
+    step3Sub:   '可以关掉这个页面去做别的，服务会在后台继续跑。',
+    step4Ok:    '处理完成',
+    step4OkSub: '结果已经存到固定位置，同事也可以直接去那儿取。',
+    step4Bad:   '没能完成',
+    step4BadSub:'这次没有产出结果。',
+    resultLabel:'结果目录'
+  },
+
+  pollMs: 3000
+};
+/* ======================= 配置区结束，以下不用改 ============================ */
+
+const $ = id => document.getElementById(id);
+const ST = CONF.states;
+const TERMINAL = CONF.terminal;
+const TONE_DOT = {run:'d-run', ok:'d-ok', warn:'d-warn', bad:'d-bad', wait:'d-wait'};
+let cur = null, stopWatch = null, lastInput = '';
+
+/* ────────────────────────────────────────────────────────────────────────────
+   进度机制：轮询（默认）。换 SSE / 日志 tail 见 templates/adapters/ ——
+   整个替换下面这一个函数即可，其余代码一行不用动。
+   ──────────────────────────────────────────────────────────────────────────── */
+function startWatching(taskId, onUpdate){
+  let stopped = false;
+  const tick = async () => {
+    if (stopped) return;
+    try { onUpdate(await api(CONF.api.task(taskId))); } catch(e){ /* 单次失败不打断 */ }
+  };
+  tick();
+  const t = setInterval(tick, CONF.pollMs);
+  return () => { stopped = true; clearInterval(t); };
+}
+
+async function api(p, o){
+  const r = await fetch(p, o); const txt = await r.text();
+  let d; try { d = JSON.parse(txt); } catch(e) { d = txt; }
+  if (!r.ok) throw new Error((d && d.detail) ? d.detail : (txt || r.status));
+  return d;
+}
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const stText = s => (ST[s] ? ST[s][0] : s);
+const stTone = s => (ST[s] ? ST[s][1] : 'wait');
+const fmtSize = n => { n = Number(n)||0;
+  if (n<1024) return n+' B';
+  if (n<1048576) return (n/1024).toFixed(1)+' KB';
+  return (n/1048576).toFixed(2)+' MB'; };
+
+document.title = CONF.title;
+CONF.stepLabels.forEach((lbl, i) => {
+  const el = document.querySelector('.st[data-s="' + (i+1) + '"] .lbl');
+  if (el) el.textContent = lbl;
+});
+$('recentSummary').textContent = CONF.recentSummary;
+
+function setStep(n){
+  document.querySelectorAll('.st').forEach(el => {
+    const s = Number(el.getAttribute('data-s'));
+    el.className = 'st' + (s < n ? ' ok' : (s === n ? ' on' : ''));
+  });
+  document.querySelectorAll('.ln').forEach(el => {
+    el.className = 'ln' + (Number(el.getAttribute('data-l')) < n ? ' on' : '');
+  });
+}
+
+/* ---------- 第 1 步 ---------- */
+async function step1(){
+  setStep(1);
+  if (stopWatch){ stopWatch(); stopWatch = null; }
+  cur = null;
+  $('card').innerHTML =
+    '<h1>' + esc(CONF.text.step1Title) + '</h1>' +
+    '<p class="sub">' + esc(CONF.lede) + '</p>' +
+    '<label for="root">' + esc(CONF.form.label) + '</label>' +
+    '<input class="inp" id="root" placeholder="' + esc(CONF.form.placeholder) + '">' +
+    '<div class="note">' + CONF.form.howto + '</div>' +
+    '<button class="btn" id="go">下一步</button>' +
+    '<p class="sub" id="fb" style="margin:14px 0 0;text-align:center;font-size:14px"></p>';
+  $('go').onclick = () => {
+    const v = $('root').value.trim();
+    if (!v){ $('fb').textContent = '请先填一个目录。'; return; }
+    lastInput = v; step2();
+  };
+  try {
+    const m = await api(CONF.api.meta);
+    const v = CONF.form.prefill(m);
+    if (v && !$('root').value) $('root').value = v;
+  } catch(e){}
+  loadRecent();
+}
+
+/* ---------- 第 2 步 ---------- */
+async function step2(){
+  setStep(2);
+  let outRoot = '';
+  try { const m = await api(CONF.api.meta); outRoot = CONF.read.outputDir(m) || ''; } catch(e){}
+  $('card').innerHTML =
+    '<h1>' + esc(CONF.text.step2Title) + '</h1>' +
+    '<p class="sub">' + esc(CONF.text.step2Sub) + '</p>' +
+    '<div class="sum">' +
+      '<div><span class="k">' + esc(CONF.form.label) + '</span><code>' +
+        esc(lastInput) + '</code></div>' +
+      '<div><span class="k">' + esc(CONF.text.resultLabel) + '</span><code>' +
+        esc(outRoot || '服务端固定位置') + '</code></div>' +
+    '</div>' +
+    (CONF.confirmNote ? '<div class="note">' + esc(CONF.confirmNote) + '</div>' : '') +
+    '<div class="row">' +
+      '<button class="btn" id="ok">开始</button>' +
+      '<button class="btn ghost" id="back">返回修改</button>' +
+    '</div>' +
+    '<p class="sub" id="fb" style="margin:14px 0 0;text-align:center;font-size:14px"></p>';
+  $('back').onclick = step1;
+  $('ok').onclick = async () => {
+    $('ok').disabled = true; $('fb').textContent = '正在提交…';
+    try {
+      const r = await api(CONF.api.create, {method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(CONF.form.body(lastInput))});
+      cur = r.task_id;
+      step3();
+    } catch(e){ $('fb').textContent = '提交失败：' + e.message; $('ok').disabled = false; }
+  };
+}
+
+/* ---------- 第 3 步 ---------- */
+function step3(){
+  setStep(3);
+  const counts = '';
+  $('card').innerHTML =
+    '<h1>' + esc(CONF.text.step3Title) + '</h1>' +
+    '<p class="sub">' + esc(CONF.text.step3Sub) + '</p>' +
+    '<div class="now" id="now">正在启动…</div>' +
+    '<div class="bar"><i id="bar"></i></div>' +
+    '<div class="cnt" id="cnt"></div>' +
+    '<div class="log" id="log">　</div>' +
+    '<button class="btn ghost" id="back">先回去</button>';
+  $('back').onclick = step1;
+  if (stopWatch){ stopWatch(); stopWatch = null; }
+  stopWatch = startWatching(cur, t => pollRun(t).catch(() => {}));
+}
+
+async function pollRun(t){
+  if (!cur || !t) return;
+  const p = CONF.read.progress(t);
+  if (!$('bar')) return;
+  $('bar').style.width = p + '%';
+  $('now').textContent = t.state === 'queued'
+    ? (stText(t.state) + (t.queue_position>1 ? '（前面还有 ' + (t.queue_position-1) + ' 个）' : ''))
+    : (CONF.read.now(t) || stText(t.state) || '处理中…');
+  $('cnt').innerHTML = CONF.read.counts(t).map(c =>
+    '<span><b>' + (c[1]||0) + '</b>' + esc(c[0]) + '</span>').join('') +
+    '<span style="margin-left:auto"><b>' + p + '</b>%</span>';
+  try {
+    const lg = await fetch(CONF.api.log(cur, 25)).then(r => r.text());
+    $('log').textContent = lg || '　';
+    $('log').scrollTop = $('log').scrollHeight;
+  } catch(e){}
+  if (TERMINAL.indexOf(t.state) >= 0){
+    if (stopWatch){ stopWatch(); stopWatch = null; }
+    step4(t);
+  }
+}
+
+/* ---------- 第 4 步 ---------- */
+function step4(t){
+  setStep(4);
+  const arts = CONF.read.artifacts(t);
+  const good = t.state === 'done' || t.state === 'partial_failed';
+  const total = arts.reduce((s,a) => s + (Number(a.size)||0), 0);
+  let html;
+  if (good){
+    html = '<div class="big"><div class="ico">✓</div>' +
+      '<h2>' + esc(CONF.text.step4Ok) + '</h2>' +
+      '<p>' + esc(CONF.text.step4OkSub) + '</p></div>' +
+      '<div class="pathbox"><div class="k">' + esc(CONF.text.resultLabel) + '</div><code>' +
+        esc(CONF.read.outputDir(t) || '—') + '</code>' +
+        (arts.length ? '<div class="files">共 ' + arts.length + ' 个文件，' +
+          fmtSize(total) + '</div>' : '') + '</div>' +
+      (t.state === 'partial_failed'
+        ? '<div class="msg warn">注意：有部分内容被跳过或失败，结果不完整。' +
+          esc(CONF.read.error(t)) + '</div>'
+        : (CONF.read.error(t) ? '<div class="msg ok">' + esc(CONF.read.error(t)) + '</div>' : '')) +
+      (arts.length ? '<button class="btn" id="dl">下载到本机</button>' : '') +
+      '<button class="btn ghost" id="again">再跑一个</button>';
+  } else {
+    html = '<div class="big"><div class="ico" style="color:#cf4438">×</div>' +
+      '<h2>' + esc(CONF.text.step4Bad) + '</h2>' +
+      '<p>' + esc(CONF.text.step4BadSub) + '</p></div>' +
+      '<div class="msg bad">' + esc(CONF.read.error(t) || stText(t.state)) + '</div>' +
+      '<button class="btn" id="again">再试一次</button>';
+  }
+  $('card').innerHTML = html;
+  if ($('dl')) $('dl').onclick = () => { location.href = CONF.api.download(cur); };
+  $('again').onclick = step1;
+  loadRecent();
+}
+
+/* ---------- 历史记录 ---------- */
+async function loadRecent(){
+  try {
+    const d = await api(CONF.api.list + '?limit=15');
+    const rows = d.tasks || [];
+    const box = $('recent');
+    box.innerHTML = rows.length ? rows.map(t =>
+      '<div class="item" data-id="' + esc(CONF.read.id(t)) + '">' +
+        '<span class="dot ' + TONE_DOT[stTone(t.state)] + '"></span>' +
+        '<span>' + esc(stText(t.state)) + '</span>' +
+        '<span style="color:#77828f;overflow:hidden;text-overflow:ellipsis;' +
+          'white-space:nowrap;max-width:330px">' +
+          esc(String(CONF.read.summary(t)||'').split(/[\\/]/).filter(Boolean).slice(-1)[0] || '') +
+        '</span>' +
+        '<span class="p">' + esc(String(t.created_at||'').replace('T',' ').slice(5,16)) + '</span>' +
+      '</div>').join('') : '<div class="item" style="color:#77828f">还没有记录</div>';
+    box.querySelectorAll('.item[data-id]').forEach(el =>
+      el.onclick = async () => {
+        const id = el.getAttribute('data-id');
+        try {
+          const t = await api(CONF.api.task(id));
+          cur = id;
+          if (t.state === 'queued' || t.state === 'running'){ step3(); }
+          else step4(t);
+        } catch(e){ alert('读取失败：' + e.message); }
+      });
+  } catch(e){}
+}
+
+step1();
+</script>
+</body>
+</html>

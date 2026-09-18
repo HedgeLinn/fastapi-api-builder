@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>示例分析</title>
+<style>
+  *{box-sizing:border-box}
+  :root{
+    --bg:#fcfcfd; --card:#fff; --ink:#0f1319; --muted:#6d7680; --line:#eaecf0;
+    --accent:#2563eb; --ok:#0d8a5f; --okbg:#effaf5; --err:#c0392b; --errbg:#fdf0ee;
+    --warn:#a86200; --warnbg:#fff8ea;
+  }
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:76px 32px 120px}
+  h1{font-size:32px;font-weight:650;letter-spacing:-.022em;margin:0 0 12px}
+  .lede{color:var(--muted);font-size:16.5px;margin:0 0 48px;max-width:46ch}
+  .box{background:var(--card);border-radius:18px;padding:34px 36px;
+    box-shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 28px -12px rgba(16,24,40,.10);
+    margin-bottom:24px}
+  label{display:block;font-size:14px;font-weight:600;color:#3b4450;margin:0 0 10px;
+    letter-spacing:.005em}
+  .inp{width:100%;padding:16px 18px;border:1.5px solid var(--line);border-radius:12px;
+    font:inherit;font-size:16px;background:#fcfcfd;transition:border-color .15s}
+  .inp:focus{outline:0;border-color:var(--accent);background:#fff}
+  details{margin:16px 0 28px;font-size:14px}
+  summary{cursor:pointer;color:var(--accent);font-weight:500;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"？";display:inline-flex;width:18px;height:18px;margin-right:8px;
+    border-radius:50%;background:#e8efff;color:var(--accent);font-size:12px;font-weight:700;
+    align-items:center;justify-content:center;vertical-align:middle}
+  details .body{margin-top:12px;padding:16px 18px;background:#f7f9fc;border-radius:10px;
+    color:#4a545f;line-height:1.8}
+  details .body b{color:var(--ink)}
+  .btn{border:0;border-radius:12px;padding:16px 30px;font:inherit;font-size:16px;
+    font-weight:600;background:var(--accent);color:#fff;cursor:pointer;
+    transition:transform .1s, opacity .15s}
+  .btn:hover{opacity:.92}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line);font-weight:500}
+  .btn.wide{width:100%}
+  .hint{font-size:13.5px;color:var(--muted);margin:12px 0 0}
+
+  .run{display:none}
+  .run.on{display:block}
+  .bar{height:10px;border-radius:99px;background:#eef0f4;overflow:hidden;margin:20px 0 12px}
+  .bar i{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,#5b8def,#2563eb);transition:width .5s}
+  .now{font-size:15px;font-weight:600}
+  .counts{display:flex;gap:26px;font-size:14px;color:var(--muted);margin-top:14px}
+  .counts b{color:var(--ink);font-size:17px;font-weight:600}
+
+  .res{display:none}
+  .res.on{display:block}
+  .done{display:flex;gap:14px;align-items:flex-start;background:var(--okbg);
+    border-radius:12px;padding:20px 22px;margin-bottom:20px}
+  .done .t{color:var(--ok);font-size:20px;line-height:1.3}
+  .done b{display:block;font-size:16px;margin-bottom:6px}
+  .done code{font-size:13.5px;color:#3d5a4e;word-break:break-all;
+    font-family:ui-monospace,Consolas,monospace}
+  .msg{display:none;border-radius:12px;padding:16px 20px;font-size:15px;margin-bottom:20px}
+  .msg.on{display:block}
+  .msg.bad{background:var(--errbg);color:var(--err)}
+  .msg.warn{background:var(--warnbg);color:var(--warn)}
+  .acts{display:flex;gap:12px;flex-wrap:wrap}
+  .log{margin-top:22px;background:#0f1720;border-radius:12px;padding:18px 20px;
+    font:12.5px/1.85 ui-monospace,Consolas,monospace;color:#bccad6;
+    max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+  .hist{margin-top:52px;font-size:14px}
+  .hist summary{color:var(--muted);font-weight:500}
+  .hist summary::before{content:"";width:0;margin:0}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:16px}
+  td{padding:13px 12px 13px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  tr.task{cursor:pointer}
+  tr.task:hover td{background:#fbfcfe}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:9px;
+    vertical-align:middle}
+  .d-run{background:#2563eb}.d-ok{background:#0d8a5f}.d-bad{background:#c0392b}
+  .d-wait{background:#b6bec8}.d-warn{background:#d9822b}
+  code{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:#4a545f}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>示例分析</h1>
+  <p class="lede">填一个数据目录，点开始。分析跑完后结果会自动存到共享盘，也可以在这里下载。</p>
+
+  <div class="box" id="form">
+    <label for="root">要分析的数据目录</label>
+    <input class="inp" id="root" placeholder="粘贴共享盘上的目录，或点下面的说明看看怎么填">
+    <details>
+      <summary>该填哪个目录？</summary>
+      <div class="body">
+        <p style="margin:0 0 10px"><b>分析一个市</b>：填这个市自己的目录。</p>
+        <p style="margin:0 0 10px"><b>一次分析多个市</b>：填它们<b>上一级</b>的目录，服务会自动逐个处理。</p>
+        <p style="margin:0 0 10px">目录里要有 <code>表A_数据文件一.xlsx</code>
+          和 <code>表B_数据文件二.xlsx</code> 这两个文件。</p>
+        <p style="margin:0">结果会自动存到：<code id="outRoot">读取中…</code></p>
+      </div>
+    </details>
+    <button class="btn wide" id="go">开始分析</button>
+    <p class="hint" id="busy"></p>
+  </div>
+
+  <div class="box run" id="run">
+    <div class="now" id="phase">正在启动…</div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="counts">
+      <span>已完成 <b id="nOk">0</b></span>
+      <span>跳过 <b id="nSkip">0</b></span>
+      <span>失败 <b id="nBad">0</b></span>
+      <span style="margin-left:auto"><b id="pct">0%</b></span>
+    </div>
+    <div class="log" id="log">　</div>
+  </div>
+
+  <div class="box res" id="res">
+    <div class="msg" id="msg"></div>
+    <div class="done" id="doneBox">
+      <span class="t">✓</span>
+      <div>
+        <b>分析完成，结果已经存到共享盘</b>
+        <code id="outDir">—</code>
+      </div>
+    </div>
+    <div class="acts">
+      <button class="btn" id="dl">下载到本机</button>
+      <button class="btn ghost" id="again">再分析一个</button>
+    </div>
+  </div>
+
+  <details class="hist">
+    <summary>查看历史任务</summary>
+    <table><tbody id="list"><tr><td style="color:#6d7680">加载中…</td></tr></tbody></table>
+  </details>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const ST = {queued:'排队中', running:'分析中', done:'已完成', partial_failed:'部分完成',
+  failed:'没成功', invalid:'没找到可分析的数据', cancelled:'已停止', interrupted:'被中断'};
+const DOT = {queued:'d-wait', running:'d-run', done:'d-ok', partial_failed:'d-warn',
+  failed:'d-bad', invalid:'d-bad', cancelled:'d-wait', interrupted:'d-bad'};
+const TERMINAL = ['done','partial_failed','failed','invalid','cancelled','interrupted'];
+let cur = null, timer = null;
+
+async function api(p, o){
+  const r = await fetch(p, o); const txt = await r.text();
+  let d; try { d = JSON.parse(txt); } catch(e) { d = txt; }
+  if (!r.ok) throw new Error((d && d.detail) ? d.detail : (txt || r.status));
+  return d;
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function short(p){ if(!p) return '—';
+  const a = String(p).split(/[\\/]/).filter(Boolean);
+  return a.length<=2 ? p : '…/' + a.slice(-2).join('/'); }
+
+async function boot(){
+  try {
+    const m = await api('/api/meta');
+    if (m.defaults && m.defaults.input_path) $('root').value = m.defaults.input_path;
+    if (m.defaults && m.defaults.output_root) $('outRoot').textContent = m.defaults.output_root;
+  } catch(e) { $('outRoot').textContent = '读取失败'; }
+  loadList();
+}
+
+async function loadList(){
+  try {
+    const d = await api('/api/tasks?limit=20');
+    const tb = $('list');
+    if (!d.tasks.length){ tb.innerHTML = '<tr><td style="color:#6d7680">还没有任务</td></tr>'; return; }
+    tb.innerHTML = d.tasks.map(t =>
+      '<tr class="task" data-id="' + esc(t.id) + '">' +
+      '<td style="width:130px"><span class="dot ' + (DOT[t.state]||'d-wait') + '"></span>' +
+        (ST[t.state]||t.state) + '</td>' +
+      '<td><code>' + esc(short(t.input_path)) + '</code></td>' +
+      '<td style="width:90px;text-align:right;color:#6d7680">' +
+        Math.round(t.progress||0) + '%</td>' +
+      '<td style="width:120px;text-align:right;color:#6d7680">' +
+        esc(String(t.created_at||'').replace('T',' ').slice(5,16)) + '</td></tr>').join('');
+    tb.querySelectorAll('tr.task').forEach(tr =>
+      tr.onclick = () => show(tr.getAttribute('data-id')));
+  } catch(e) {}
+}
+
+function show(id){
+  cur = id;
+  $('form').style.display = 'none';
+  $('run').classList.add('on');
+  $('res').classList.remove('on');
+  tick();
+  if (!timer) timer = setInterval(() => { tick(); loadList(); }, 3000);
+}
+
+async function tick(){
+  if (!cur) return;
+  let t;
+  try { t = await api('/api/tasks/' + cur); } catch(e) { return; }
+  const p = t.state === 'invalid' ? 0 : Math.round(t.progress || 0);
+  $('bar').style.width = p + '%';
+  $('pct').textContent = p + '%';
+  $('nOk').textContent = t.ok_count||0;
+  $('nSkip').textContent = t.skipped_count||0;
+  $('nBad').textContent = t.fail_count||0;
+  $('phase').textContent = t.state === 'queued'
+    ? ('排队中' + (t.queue_position>1 ? '（前面还有 ' + (t.queue_position-1) + ' 个）' : ''))
+    : (t.current_item ? ('正在处理 ' + t.current_item +
+        (t.total_count ? '（' + (t.current_no||0) + '/' + t.total_count + '）' : ''))
+       : (t.phase === 'scan' ? '正在扫描输入目录…' : (ST[t.state] || '分析中…')));
+  try {
+    const lg = await fetch('/api/tasks/' + cur + '/log?tail=30').then(r => r.text());
+    $('log').textContent = lg || '　';
+    $('log').scrollTop = $('log').scrollHeight;
+  } catch(e) {}
+
+  if (TERMINAL.indexOf(t.state) >= 0){
+    clearInterval(timer); timer = null;
+    $('run').classList.remove('on');
+    $('res').classList.add('on');
+    $('outDir').textContent = t.output_dir || '—';
+    const good = t.state === 'done' || t.state === 'partial_failed';
+    $('doneBox').style.display = good ? '' : 'none';
+    if (!good){
+      $('msg').className = 'msg on bad';
+      $('msg').textContent = t.error || (ST[t.state] || t.state);
+    } else if (t.state === 'partial_failed'){
+      $('msg').className = 'msg on warn';
+      $('msg').textContent = '部分完成：' + (t.error || '有区域被跳过或失败，细节见日志。');
+    } else { $('msg').className = 'msg'; }
+    $('dl').style.display = (t.artifacts && t.artifacts.length) ? '' : 'none';
+    loadList();
+  }
+}
+
+$('go').onclick = async () => {
+  const v = $('root').value.trim();
+  if (!v){ $('busy').textContent = '请先填数据目录。'; return; }
+  $('go').disabled = true; $('busy').textContent = '提交中…';
+  try {
+    const r = await api('/api/tasks', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body: JSON.stringify({input_path: v})});
+    $('busy').textContent = '';
+    show(r.task_id);
+  } catch(e){ $('busy').textContent = '提交失败：' + e.message; }
+  finally { $('go').disabled = false; }
+};
+$('dl').onclick = () => {
+  if (cur) {
+    const t = document.createElement('a');
+    t.href = '/api/tasks/' + cur + '/download';
+    t.click();
+  }
+};
+$('again').onclick = () => {
+  cur = null; if (timer){ clearInterval(timer); timer = null; }
+  $('run').classList.remove('on');
+  $('res').classList.remove('on');
+  $('form').style.display = '';
+  $('busy').textContent = '';
+  $('root').value = '';
+  $('log').textContent = '　';
+  boot2();
+};
+async function boot2(){
+  try { const m = await api('/api/meta');
+    if (m.defaults && m.defaults.input_path) $('root').value = m.defaults.input_path; } catch(e){}
+}
+boot();
+</script>
+</body>
+</html>
