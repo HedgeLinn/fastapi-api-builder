@@ -25,7 +25,7 @@
 - 自带多语言代码示例（curl / Python / JS）+ 搜索
 - 代价：脚本 3.6 MB，自托管一次性付出
 
-### 备选（都能挂上，但只验到 HTTP 200）
+### 备选
 
 RapiDoc（轻，阅读型）、Stoplight Elements（文档站风格）、ReDoc（FastAPI 内置）、Swagger UI（就是被代替的那个）。
 
